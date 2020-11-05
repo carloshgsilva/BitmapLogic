@@ -239,7 +239,62 @@ class Logic{
         this.notGates = [];
         this.mapWires();
     }
-    
+    syncStep(){
+        var needSync = false;
+        for(var not of this.notGates){
+            var src = not[0];
+            var dst = not[1];
+
+            //Detect from 0 to 1 double not gate memory
+            if(this.data.getState(src[0], src[1]) == 0 && this.data.getState(dst[0], dst[1]) == 0 &&
+               this.data.getLastState(src[0], src[1]) == 255 && this.data.getLastState(dst[0], dst[1]) == 255 
+            ){
+                needSync = true;
+            }
+
+            //Pass State Forward
+            if(this.data.getState(src[0], src[1]) == 0){
+                this.data.setState(dst[0], dst[1], 255);
+            }
+
+        }
+        return needSync;
+    }
+    setRunState(){
+        //Fill Random state
+        for(var i=0;i<this.data.state.length;i++){
+            this.data.state[i] = Math.random() < 0.5 ? 0 : 255;
+            this.data.lastState[i] = Math.random() < 0.5 ? 0 : 255;
+        }
+
+        //Randomize not gates
+        function shuffleArray(array) {
+            for (var i = array.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+        }
+        shuffleArray(this.notGates);
+
+        //Apply not gates sync
+        //It Ensures the memory (double loop not gates) doesn't flicker
+        var i=0;
+        while(this.syncStep()){
+            i++;
+            if(i>1024){
+                console.log("Out of sync, Memory cells will Flick!");
+                break;
+            }
+            //A Normal Step is needed because the Sync will only work on memory with state 0
+            //If we call it the memory flips
+            this.step(1);
+        }
+        
+
+        this.data.updateState();
+    }
     setShowState(){
         this.data.state.fill(255);
         this.data.updateState();
@@ -248,18 +303,13 @@ class Logic{
         for(var i=0;i<stepCount;i++){
             this.data.flipLastState();
             this.data.state.fill(0);
-            /*
-            for(var i=0;i<this.data.state.length;i++){
-                this.data.state[i] = Math.random() < 0.5 ? 0 : 255;
-            }
-            */
+
             //Apply not gates
             for(var not of this.notGates){
                 var src = not[0];
                 var dst = not[1];
                 if(this.data.getLastState(src[0], src[1]) == 0){
                     this.data.setState(dst[0], dst[1], 255);
-                    this.data.setLastState(dst[0], dst[1], 255);
                 }
             }
         }
@@ -315,41 +365,6 @@ class Logic{
             }
         }
 
-        /*
-        //Find Cross
-        var remmapedPointers = [];
-        for(var x = 0;x<this.size-2;x++){
-            for(var y = 0;y<this.size-2;y++){
-                var isACross = this.isWire(x+1, y) && this.isWire(x, y+1) && this.isWire(x+1, y+2) && this.isWire(x+2, y+1) && !this.isWire(x+1, y+1);
-                var topLeft = this.isWire(x, y);
-                var topRight = this.isWire(x+2, y);
-                var bottomLeft = this.isWire(x, y+2);
-                var bottomRight = this.isWire(x+2, y+2);
-
-                //Corners Empty
-                if(isACross && !topLeft && !topRight && !bottomLeft && !bottomRight){
-                    function isRemapped(x, y){
-
-                    }
-
-                    var isLeftRemaped = 
-                    this.remapCrossWires(x+1, y+2, this.data.getPointer(x+1, y));
-                    this.remapCrossWires(x+2, y+1, this.data.getPointer(x, y+1));
-                }
-            }
-        }
-        */
-
-        function shuffleArray(array) {
-            for (var i = array.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
-            }
-        }
-        shuffleArray(this.notGates);
-
         //Find Not Gates
         this.notGates = [];
         this.wireCross = [];
@@ -379,17 +394,10 @@ class Logic{
                     else if(!topLeft && topRight && !bottomLeft && bottomRight){
                         this.notGates.push([this.data.getPointer(x+1, y), this.data.getPointer(x, y+1)]);
                     }
-                    //Cross
-                    else if(!topLeft && !topRight && !bottomLeft && !bottomRight){
-                        //this.remapCrossWires(x+1, y+2, this.data.getPointer(x+1, y));
-                        //this.remapCrossWires(x+2, y+1, this.data.getPointer(x, y+1));
-                    }
                 }
             }
         }
 
-        
-        
         this.data.updatePointer();
         this.data.updateState();
     }
@@ -421,20 +429,6 @@ class Logic{
             return true;
         }
         return false;
-    }
-    remapCrossWires(x, y, newPointer){
-        var wireStack = [[x, y]];
-
-        while(wireStack.length > 0){
-            var p = wireStack.pop();
-            this.data.setPointer(p[0], p[1], newPointer);
-
-            //Check neighbours
-            if(this.isWireAndNotPointer(p[0]+1, p[1]+0, newPointer)){ wireStack.push([p[0]+1, p[1]+0]); }
-            if(this.isWireAndNotPointer(p[0]-1, p[1]+0, newPointer)){ wireStack.push([p[0]-1, p[1]+0]); }
-            if(this.isWireAndNotPointer(p[0]+0, p[1]+1, newPointer)){ wireStack.push([p[0]+0, p[1]+1]); }
-            if(this.isWireAndNotPointer(p[0]+0, p[1]-1, newPointer)){ wireStack.push([p[0]+0, p[1]-1]); }
-        }
     }
 
     loadFromImageData(imageData){
@@ -574,9 +568,9 @@ class Editor{
             //Set the State each step
             var p = logic.data.getPointer(this.lastMouseX, this.lastMouseY);
             
-            //If the pointer is not empty
-            if(p[0]!=0||p[1]!=0){
-                logic.data.setState(p[0], p[1], this.mouseDown == 0 ? 255 : 0 );
+            //If the pointer is not empty and mouseIs pressed
+            if((p[0]!=0||p[1]!=0) && this.mouseDown == 0){
+                logic.data.setState(p[0], p[1], 255);
                 logic.data.updateState();
             }
         }
@@ -604,6 +598,7 @@ class Editor{
             if(this.running){
                 document.getElementById("edit-toolbar").classList.add("hidden");
                 logic.mapWires();
+                logic.setRunState();
             }else{
                 document.getElementById("edit-toolbar").classList.remove("hidden");
                 logic.setShowState();
