@@ -450,6 +450,10 @@ class Logic{
         this.mapWires();
     }
 
+    loadFromUrl(url){
+        ImageDataFromURL(url, (data)=>this.loadFromImageData(data));
+    }
+
     render(){
         
     }
@@ -520,7 +524,7 @@ class Editor{
             e.preventDefault();
 
             switch(e.key){
-                case " ": logic.step(21); break;
+                case " ": logic.step(1); break;
                 case "1": this.tool = "paint"; this.updateToolbar(); break;
                 case "2": this.tool = "pick"; this.updateToolbar(); break;
                 case "3": document.getElementById('colorpicker').click(); break;
@@ -667,24 +671,26 @@ window.addEventListener('contextmenu', (e)=>{
 });
 
 //Handle File Load
-document.getElementsByTagName('input')[0].onchange = (e)=>{
+document.getElementsByTagName('input')[0].addEventListener('input', (e)=>{
     var fr = new FileReader();
     fr.addEventListener('load', (e)=>{
-        var img = document.createElement('img');
-        var canvas = document.createElement('canvas');
-        var c = canvas.getContext('2d');
-        img.onload = ()=>{
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            c.drawImage(img, 0, 0);
-
-            logic.loadFromImageData(c.getImageData(0, 0, canvas.width, canvas.height))
-
-            document.getElementById('dragdropfile').classList.remove('full');
-        }
-        img.src = e.target.result;
+        logic.loadFromUrl(e.target.result);
     });
     fr.readAsDataURL(e.target.files[0]);
+});
+function ImageDataFromURL(url, callback){
+    var img = document.createElement('img');
+    img.crossOrigin = "Anonymous";
+    var canvas = document.createElement('canvas');
+    var c = canvas.getContext('2d');
+    img.onload = ()=>{
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        c.drawImage(img, 0, 0);
+        callback(c.getImageData(0, 0, canvas.width, canvas.height));
+        document.getElementById('dragdropfile').classList.remove('full');
+    }
+    img.src = url;
 }
 
 //Drag And Drop

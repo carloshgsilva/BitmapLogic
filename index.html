@@ -64,9 +64,20 @@
         #colorpicker::-webkit-color-swatch{
             border: none;
         }
+        #demos{
+            position: absolute;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            color: white;
+        }
+        #demos > a{
+            color: white;
+        }
     </style>
 </head>
 <input id="dragdropfile" type="file" style="position: absolute;" tabindex="-1"/>
+
 <div id='toolbar'>
     <div class='toolbar-group'>
         <div id='playpause' onclick="toolbarButton(this)">▶</div>
@@ -77,6 +88,12 @@
     </div>
     <input id='colorpicker' type='color' value="#ffffff" tabindex="-1"/>
 </div>
+
+<div id='demos'>
+    <a href='javascript:logic.loadFromUrl("img/8bit_cpu.png");'>8 Bit CPU</a>
+    <a href='javascript:logic.loadFromUrl("img/clock2.png");'>Clock</a>
+</div>
+
 <body style="margin: 0; overflow-x: hidden;">
 <canvas></canvas>
 <script src='main.js'></script>
