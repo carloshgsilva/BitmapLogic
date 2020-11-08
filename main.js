@@ -417,7 +417,6 @@ class Camera{
         this.width = canvas.width;
         this.height = canvas.height;
         window.addEventListener('resize', e=>{
-            console.log("Canvas resize")
             this.width = window.innerWidth;
             this.height = window.innerHeight;
             this.aspectRatio = this.width/this.height;
@@ -581,25 +580,6 @@ class Editor{
     }
 }
 
-var camera = new Camera();
-var logic = new Logic();
-var renderer = new Renderer();
-var editor = new Editor(logic);
-
-var lastTime = 0;
-function mainLoop(time){
-    var dt = time-lastTime;
-
-    renderer.render(logic.data, camera);
-
-    lastTime = time;
-    //camera.renderWorld(logic);
-    requestAnimationFrame(mainLoop);
-}
-requestAnimationFrame(mainLoop);
-
-
-
 //Controls callbacks
 window.onresize = function(e){
     var w = window.innerWidth;
@@ -653,3 +633,25 @@ window.addEventListener('dragover', e=>{
     document.getElementById('dragdropfile').value = null;
     document.getElementById('dragdropfile').classList.add('full');
 });
+
+
+
+var camera = new Camera();
+var logic = new Logic();
+var renderer = new Renderer();
+var editor = new Editor(logic);
+
+var lastTime = 0;
+function mainLoop(time){
+    var dt = time-lastTime;
+
+    renderer.render(logic.data, camera);
+
+    lastTime = time;
+    //camera.renderWorld(logic);
+    requestAnimationFrame(mainLoop);
+}
+requestAnimationFrame(mainLoop);
+
+//Load default project
+logic.loadFromUrl("img/8bit_cpu.png");
