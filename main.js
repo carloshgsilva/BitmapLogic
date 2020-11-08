@@ -567,7 +567,9 @@ class Editor{
             document.getElementById("playpause").innerHTML = this.running ? "◼" : "▶";
         }else if(e.id == "new"){
             var size = prompt("Choose image size: ", "32");
-            this.logic.newFromSize(parseInt(size));
+            if(size != undefined){
+                this.logic.newFromSize(parseInt(size));
+            }
         }else{
             this.tool = e.id;
             this.updateToolbar();
