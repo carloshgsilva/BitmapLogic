@@ -233,8 +233,8 @@ class LogicData{
 }
 
 class Logic{
-    constructor(){
-        this.size = 64;
+    constructor(size){
+        this.size = size || 64;
         this.data = new LogicData(this.size);
         this.notGates = [];
         this.mapWires();
@@ -402,9 +402,14 @@ class Logic{
         this.data.updateColor();
         this.mapWires();
     }
-
     loadFromUrl(url){
         ImageDataFromURL(url, (data)=>this.loadFromImageData(data));
+    }
+    newFromSize(size){
+        this.size = size;
+        this.data = new LogicData(this.size);
+        this.notGates = [];
+        this.mapWires();
     }
 }
 
@@ -560,6 +565,9 @@ class Editor{
 
             //Set Correct Icon
             document.getElementById("playpause").innerHTML = this.running ? "◼" : "▶";
+        }else if(e.id == "new"){
+            var size = prompt("Choose image size: ", "32");
+            this.logic.newFromSize(parseInt(size));
         }else{
             this.tool = e.id;
             this.updateToolbar();
