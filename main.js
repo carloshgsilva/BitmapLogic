@@ -239,60 +239,12 @@ class Logic{
         this.notGates = [];
         this.mapWires();
     }
-    syncStep(){
-        var needSync = false;
-        for(var not of this.notGates){
-            var src = not[0];
-            var dst = not[1];
-
-            //Detect from 0 to 1 double not gate memory
-            if(this.data.getState(src[0], src[1]) == 0 && this.data.getState(dst[0], dst[1]) == 0 &&
-               this.data.getLastState(src[0], src[1]) == 255 && this.data.getLastState(dst[0], dst[1]) == 255 
-            ){
-                needSync = true;
-            }
-
-            //Pass State Forward
-            if(this.data.getState(src[0], src[1]) == 0){
-                this.data.setState(dst[0], dst[1], 255);
-            }
-
-        }
-        return needSync;
-    }
     setRunState(){
         //Fill Random state
         for(var i=0;i<this.data.state.length;i++){
             this.data.state[i] = Math.random() < 0.5 ? 0 : 255;
             this.data.lastState[i] = Math.random() < 0.5 ? 0 : 255;
         }
-
-        //Randomize not gates
-        function shuffleArray(array) {
-            for (var i = array.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
-            }
-        }
-        shuffleArray(this.notGates);
-
-        //Apply not gates sync
-        //It Ensures the memory (double loop not gates) doesn't flicker
-        var i=0;
-        while(this.syncStep()){
-            i++;
-            if(i>1024){
-                console.log("Out of sync, Memory cells will Flick!");
-                break;
-            }
-            //A Normal Step is needed because the Sync will only work on memory with state 0
-            //If we call it the memory flips
-            this.step(1);
-        }
-        
-
         this.data.updateState();
     }
     setShowState(){
@@ -304,15 +256,26 @@ class Logic{
             this.data.flipLastState();
             this.data.state.fill(0);
 
+            //Set LastState to 254 for gates that are GoingToBeActive
+            for(var not of this.notGates){
+                var src = not[0];
+                var dst = not[1];
+                if(this.data.getLastState(src[0], src[1]) == 0){
+                    this.data.setLastState(dst[0], dst[1], 254);
+                }
+            }
+
             //Apply not gates
             for(var not of this.notGates){
                 var src = not[0];
                 var dst = not[1];
+                //Of Gate src is not Active(255) or is not GoingToBeActive(254)
                 if(this.data.getLastState(src[0], src[1]) == 0){
                     this.data.setState(dst[0], dst[1], 255);
                 }
             }
         }
+
         this.data.updateState();
     }
 
@@ -417,10 +380,6 @@ class Logic{
         var cPointer = this.data.getPointer(x, y);
         return cPointer[0] == pointer[0] && cPointer[1] == pointer[1];
     }
-    isWireAndNotPointer(x, y, pointer){
-        if(x < 0 || y < 0 || x >= this.size || y >= this.size)return false;
-        return this.isWire(x, y) && !this.isPointer(x, y, pointer);
-    }
     isCross(x, y){
         if(!this.isWire(x, y) && //Center
             this.isWire(x+1, y) && this.isWire(x-1, y) && this.isWire(x, y+1) && this.isWire(x, y-1) && //Cross
@@ -446,10 +405,6 @@ class Logic{
 
     loadFromUrl(url){
         ImageDataFromURL(url, (data)=>this.loadFromImageData(data));
-    }
-
-    render(){
-        
     }
 }
 
@@ -565,7 +520,7 @@ class Editor{
         if(this.running){
             this.logic.step(1);
 
-            //Set the State each step
+            //Set the State each step for user interation
             var p = logic.data.getPointer(this.lastMouseX, this.lastMouseY);
             
             //If the pointer is not empty and mouseIs pressed
